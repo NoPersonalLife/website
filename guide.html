@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NoPersonalLife GNU/Linux - Installation Guide</title>
+    <style>
+        body {
+            background-color: #000000;
+            color: #ffffff;
+        }
+        a {
+            color: #ffffff;
+        }
+    </style>
+</head>
+<body>
+
+    <p>
+        <a href="index.html">Home</a> | 
+        <a href="guide.html">Installation Guide</a> | 
+        <a href="downloads.html">Downloads</a> | 
+        <a href="docs.html">Documentation</a>
+    </p>
+
+    <hr>
+
+    <h1>Installation</h1>
+    <p>In theory, you can install NoPersonalLife GNU/Linux from any other livecd or installed system not only NoPersonalLife GNU/Linux livecd</p>
+    <p>Installation is tested on: NoPersonalLife GNU/Linux livecd, Parabola GNU/Linux-libre livecd, Gentoo GNU/Linux.</p>
+
+    <h2>1. Partitioning the disk and mounting the partitions</h2>
+
+    <h3>1. Partitioning the disk using cfdisk</h3>
+    <p>Looking for block devices via lsblk</p>
+    <pre><code>lsblk</code></pre>
+
+    <p>Partitioning</p>
+    <pre><code>cfdisk /dev/your-disk</code></pre>
+
+    <p>Create an 256mb EFI partition<br>
+    Swap partiton ( if you want swap partition )<br>
+    Root partition</p>
+
+    <h3>2. Formatting partitions</h3>
+    <pre><code>mkfs.fat -F 32 /dev/efi-pertition
+mkswap /dev/swap-partition ( if created )
+mkfs.ext4 /dev/root-partition</code></pre>
+
+    <h3>3. Mounting partitions</h3>
+    <pre><code>mount /dev/root-partition /mnt
+mkdir /mnt/efi
+mount /dev/efi-partition /mnt/efi
+swapon /dev/swap-partition ( if created )</code></pre>
+
+    <h2>4. Verifying that partitions are correct</h2>
+    <pre><code>lsblk</code></pre>
+    <pre><code>cd /mnt</code></pre>
+
+    <h2>2. Downloadng and extracting the stage archive with the base system</h2>
+
+    <h3>1. Downloading the stage archive</h3>
+    <pre><code>wget https://github.com/Nick-cpp/NoPersonalLife-GNULinux/releases/download/release/stage.tar.xz</code></pre>
+
+    <h3>2. Extracting the stage archive</h3>
+    <pre><code>tar -xJvf stage.tar.xz</code></pre>
+
+    <h2>3. Chrooting into the system</h2>
+
+    <h3>1. Preparing for chroot</h3>
+    <pre><code>mount -o bind /dev /mnt/dev
+mount -o bind /dev/pts /mnt/dev/pts
+mount -t proc proc /mnt/proc
+mount -t sysfs sysfs /mnt/sys
+mount -t tmpfs tmpfs /mnt/run</code></pre>
+
+    <h3>2. Chrooting</h3>
+    <pre><code>chroot /mnt /bin/sh
+source /etc/profile</code></pre>
+
+    <pre><code>chown -R root /
+chmod 1777 /tmp
+chmod 4755 /bin/busybox</code></pre>
+
+    <h2>4. Building and installing needed packages</h2>
+
+    <h3>1. Downloading, building and installing bash</h3>
+    <pre><code>cd</code></pre>
+    <pre><code>wget https://ftp.gnu.org/gnu/bash/bash-5.3.tar.gz
+tar -xf bash-5.3.tar.gz</code></pre>
+    <pre><code>cd bash-5.3/
+./configure --prefix=/usr --sysconfdir=/etc --libdir=/usr/lib --without-bash-malloc
+make
+make install</code></pre>
+
+    <pre><code>cd</code></pre>
+
+    <h3>2. Sync the mspm repository</h3>
+    <pre><code>mspm sync</code></pre>
+
+    <h3>3. Configure compile options in /etc/mspm/make.conf</h3>
+    <p>example configuration:</p>
+    <p>file: /etc/mspm/make.conf</p>
+    <pre><code>CFLAGS="-march=native -O2 -pipe"
+CXXFLAGS="-march=native -O2 -pipe"
+MAKEFLAGS="${MAKEFLAGS} -j8"</code></pre>
+
+    <h3>4. Installing needed packages via mspm</h3>
+    <pre><code>mspm install m4 flex bison gawk bash npl-init python util-linux libtool autoconf automake gettext efibootmgr grub</code></pre>
+
+    <h3>5. Installing the NPL-Linux kernel</h3>
+    <p>binary kernel:</p>
+    <pre><code>mspm install kernel-bin</code></pre>
+    <p>compile kernel:</p>
+    <pre><code>mspm install kernel</code></pre>
+
+    <h3>6. Installing network daemon</h3>
+    <p>dhcpcd:</p>
+    <pre><code>mspm install dhcpcd</code></pre>
+    <p>Enabling the service:</p>
+    <pre><code>echo "dhcpcd" &gt;&gt; /etc/npl-init/sv/DEFAULT</code></pre>
+
+    <p>iwd:</p>
+    <pre><code>mspm install iwd</code></pre>
+    <p>Enabling the services:</p>
+    <pre><code>echo "dbus" &gt;&gt; /etc/npl-init/sv/DEFAULT
+echo "iwd" &gt;&gt; /etc/npl-init/sv/DEFAULT</code></pre>
+
+    <h2>5. Making the system bootable</h2>
+
+    <h3>1. Installing grub the bootloader</h3>
+    <pre><code>mount -t efivarfs efivarfs /sys/firmware/efi/efivars</code></pre>
+    <pre><code>grub-install --target=x86_64-efi --efi-directory=/efi --bootloader-id=NoPersonalLife-GNULinux --recheck
+grub-mkconfig -o /boot/grub/grub.cfg</code></pre>
+
+    <h3>2. Creating the /etc/fstab</h3>
+    <p>You may write the fstab by yourself or use <code>npl fstab generator</code>:</p>
+    <pre><code>mspm install fstab-gen
+fstab-gen &gt; /etc/fstab</code></pre>
+
+    <h2>6. Final steps</h2>
+
+    <h3>1. Installing a password for root</h3>
+    <pre><code>passwd</code></pre>
+
+    <h3>2. exiting and rebooting</h3>
+    <pre><code>exit</code></pre>
+    <pre><code>cd</code></pre>
+    <pre><code>umount /mnt/sys/firmware/efi/efivars</code></pre>
+    <pre><code>umount /mnt/run
+umount /mnt/sys
+umount /mnt/proc
+umount /mnt/dev/pts
+umount /mnt/dev
+umount /mnt/efi
+umount /mnt</code></pre>
+    <pre><code>reboot</code></pre>
+
+    <h2>7. Ending</h2>
+
+    <p>Put your service scripts in /etc/npl-init/sv</p>
+    <p>Also use the <code>/etc/npl-init/sv/DEFAULT</code> file to setup their autostart</p>
+    <p>npl-init repository: <a href="https://github.com/Nick-cpp/npl-init">https://github.com/Nick-cpp/npl-init</a></p>
+    <p>mspm repository: <a href="https://github.com/Nick-cpp/mspm">https://github.com/Nick-cpp/mspm</a></p>
+
+    <p><strong>Thanks for using NoPersonalLife GNU/Linux!</strong></p>
+
+    <hr>
+
+    <h1>After installation</h1>
+
+    <h3>Optional instructions after installation of NoPersonalLife GNU/Linux</h3>
+
+    <hr>
+
+    <h3>Upgrading the system</h3>
+    <pre><code>mspm update</code></pre>
+
+    <hr>
+
+    <h3>Creating a user</h3>
+    <pre><code>mkdir /home
+adduser user</code></pre>
+
+</body>
+</html>

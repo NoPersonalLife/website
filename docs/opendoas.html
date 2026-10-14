@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Installing and configuring opendoas - NoPersonalLife GNU/Linux</title>
+    <style>
+        body {
+            background-color: #000000;
+            color: #ffffff;
+        }
+        a {
+            color: #ffffff;
+        }
+    </style>
+</head>
+<body>
+
+    <p>
+        <a href="../index.html">Home</a> | 
+        <a href="../guide.html">Installation Guide</a> | 
+        <a href="../downloads.html">Downloads</a> | 
+        <a href="../docs.html">Documentation</a>
+    </p>
+
+    <hr>
+
+    <h1>Installing and configuring opendoas ( for gaining root privileges )</h1>
+
+    <pre><code>mspm install opendoas</code></pre>
+
+    <p>Create /etc/doas.conf and configure it:</p>
+    <p>file: /etc/doas.conf</p>
+    <pre><code>permit user</code></pre>
+
+    <p>If you want doas to remember your password for a while and not ask for it every time</p>
+    <p>file: /etc/doas.conf</p>
+    <pre><code>permit persist user</code></pre>
+
+    <hr>
+
+    <p>Or you may add your user to wheel group and configure doas for it</p>
+    <pre><code>addgroup wheel
+addgroup user wheel</code></pre>
+
+    <p>file: /etc/doas.conf</p>
+    <pre><code>permit :wheel</code></pre>
+
+    <p>If you want doas to remember your password for a while and not ask for it every time</p>
+    <p>file: /etc/doas.conf</p>
+    <pre><code>permit persist :wheel</code></pre>
+
+</body>
+</html>
